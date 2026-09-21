@@ -1,0 +1,13 @@
+# Secrets: never commit
+config/config.php
+.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs / uploads
+*.log
+assets/img/uploads/
