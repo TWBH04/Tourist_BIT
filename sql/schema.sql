@@ -1,5 +1,4 @@
--- DayQuest schema (SRS v1.2, Appendix B ERD)
--- Additions to the ERD are marked [+]. Update Figure 2 to match.
+
 CREATE DATABASE IF NOT EXISTS dayquest CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE dayquest;
 
@@ -12,15 +11,15 @@ DROP TABLE IF EXISTS admin;
 CREATE TABLE admin (
   admin_id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username       VARCHAR(50)  NOT NULL UNIQUE,
-  password_hash  VARCHAR(255) NOT NULL,                 -- password_hash() output only (NFR-006)
-  failed_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,  -- [+] FR-025 lockout
-  locked_until   DATETIME NULL                          -- [+] FR-025 lockout
+  password_hash  VARCHAR(255) NOT NULL,                 
+  failed_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,  
+  locked_until   DATETIME NULL                          
 ) ENGINE=InnoDB;
 
 CREATE TABLE category (
   category_id    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   category_name  VARCHAR(50) NOT NULL UNIQUE,
-  is_outdoor     TINYINT(1) NOT NULL DEFAULT 0          -- [+] FR-021 weather flagging
+  is_outdoor     TINYINT(1) NOT NULL DEFAULT 0          
 ) ENGINE=InnoDB;
 
 CREATE TABLE place (
@@ -29,14 +28,14 @@ CREATE TABLE place (
   category_id    INT UNSIGNED NOT NULL,
   description    TEXT,
   opening_hours  VARCHAR(150),
-  visit_duration SMALLINT UNSIGNED NOT NULL DEFAULT 60, -- minutes
+  visit_duration SMALLINT UNSIGNED NOT NULL DEFAULT 60, 
   latitude       DECIMAL(9,6) NOT NULL,
   longitude      DECIMAL(9,6) NOT NULL,
   entrance_fee   VARCHAR(100),
-  distance_from_panadura DECIMAL(5,1) NOT NULL,         -- km
-  travel_tips    TEXT,                                  -- include safety notes (NFR-005)
+  distance_from_panadura DECIMAL(5,1) NOT NULL,         
+  travel_tips    TEXT,                                  
   accessibility_info TEXT,
-  thumbnail      VARCHAR(255),                          -- [+] FR-005 thumbnail path
+  thumbnail      VARCHAR(255),                          
   CONSTRAINT fk_place_category FOREIGN KEY (category_id)
     REFERENCES category(category_id) ON UPDATE CASCADE ON DELETE RESTRICT,
   INDEX idx_place_distance (distance_from_panadura),

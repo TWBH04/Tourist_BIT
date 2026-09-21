@@ -1,6 +1,3 @@
--- DayQuest seed data. Places/distances/descriptions come from the Project Proposal, Table 2.
--- !! Coordinates are APPROXIMATE. Verify each on openstreetmap.org (right-click > Show address).
--- !! opening_hours / entrance_fee are 'TBC' and visit_duration values are estimates: verify all.
 USE dayquest;
 
 INSERT INTO category (category_id, category_name, is_outdoor) VALUES
