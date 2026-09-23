@@ -35,7 +35,7 @@ $sql = 'SELECT p.place_id, p.name, p.category_id, c.category_name, c.is_outdoor,
         JOIN category c ON c.category_id = p.category_id'. ($where ? ' WHERE ' . implode(' AND ', $where) : '')
         . " ORDER BY p.distance_from_panadura $order, p.name ASC";
 
-#pull
+#pull exec
 try {
     $st = dbc()->prepare($sql);
     $st->execute($paramits);
