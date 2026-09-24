@@ -3,9 +3,9 @@ require __DIR__.'/Bootstrap.php';
 
 #template query
 try{
-    $rows=dbc()->query('SELECT template_id, template_name,
-    p.place_id,p.place_name,p.visit-duration,p.latitiude,p.longtitde,
-    tp.oreder_index
+    $rows=dbc()->query('SELECT t.template_id, t.template_name,
+    p.place_id,p.name,p.visit_duration,p.latitude,p.longitude,
+    tp.order_index
     FROM template t
     LEFT JOIN template_place tp ON tp.template_id=t.template_id
     LEFT JOIN place p ON p.place_id=tp.place_id
@@ -17,7 +17,7 @@ try{
         $tid =(int)$r['template_id'];
         if(!isset($templates[$tid])){
             $templates[$tid]=
-            ['template-id'=>$tid,
+            ['template_id'=>$tid,
             'template_name'=>$r['template_name'],
             'places'=>[]];
             
