@@ -23,7 +23,7 @@ if($_SERVER['REQUEST_METHOD'] !== 'GET'){
 function dbc(): PDO{
     static $pdo=null;
     if($pdo===null){
-        $clocal=__dir__.'/config/config.php';
+        $clocal=__DIR__. '/../config/config.php';
         if(!file_exists($clocal)){
             error_log('DayQuest: config/config.php missing');
             handleError('Config  not found', 500);
