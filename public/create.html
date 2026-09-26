@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DayQuest - Create Plan</title>
+</head>
+<body>
+    <!-- Name date hours setup forum -->
+    <div class="container mt-5" style="max-width: 600px;">
+        <h1 class="mb-4">Set Up Your Plan</h1>
+
+        <form id="setup-form">
+            <div class="mb-3">
+                <label for="plan-name" class="form-label">Plan name</label>
+                <input type="text" class="form-control" id="plan-name" value="Visit Plan" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="visit-date" class="form-label">Planned visit date</label>
+                <input type="date" class="form-control" id="visit-date" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="Start-Time" class="form-label">Start Time</label>
+                <input type="time" class="form-control" id="Start-Time" value="08:00" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="End-Time" class="form-label">End Time</label>
+                <input type="time" class="form-control" id="End-Time" value="18:00" required>
+            </div>
+
+            <hr class="my-4">
+
+            <div id="template-suggestion" class="mb-4">
+                <!-- Part 2 goes here -->
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100">Build my own plan</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</body>
+</html>
+</body>
+</html>
