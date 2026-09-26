@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DayQuest</title>
+</head>
+<body>
+    <div class="container text-center mt-5">
+        <h1 class="mt-4">DayQuest</h1>
+        <p class="lead">
+        Discover, plan, and explore places of interest within 25 km of Panadura, Sri Lanka.
+        </p>
+        <a href="plan-setup.html" class="btn btn-primary btn-lg mt-3">Start planning your day</a>
+        <p> </p>
+        <div id="resume-banner"></div>
+    </div>
+    <script>
+        const SavedPlan =localStorage.getItem('DayQuestPlan');
+        if(SavedPlan){
+            const plan= JSON.parse(SavedPlan);
+            const Count=plan.places.length;
+
+            document.getElementById('resume-banner').innerHTML=
+            `<div class="alert alert-info">
+        <p>Or Continue Your Existing Plan, "<strong>${plan.plan_name}</strong>", with ${Count} place(s) for ${plan.date}</p>.
+        <a href="plan.html" class="btn btn-sm btn-info ms-2">Continue plan</a>
+      </div>`
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</body>
+</html>
