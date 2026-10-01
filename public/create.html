@@ -20,28 +20,101 @@
             <div class="mb-3">
                 <label for="visit-date" class="form-label">Planned visit date</label>
                 <input type="date" class="form-control" id="visit-date" required>
+                <p><i>*note that weather sugestions will only be availbale for 5 days onward from the present day</i></p>
             </div>
 
-            <div class="mb-3">
+            <div class="row mb-3">
+                <div class="col">
                 <label for="Start-Time" class="form-label">Start Time</label>
                 <input type="time" class="form-control" id="Start-Time" value="08:00" required>
-            </div>
-
-            <div class="mb-3">
+                </div>
+                <div class="col">
                 <label for="End-Time" class="form-label">End Time</label>
                 <input type="time" class="form-control" id="End-Time" value="18:00" required>
-            </div>
-
-            <hr class="my-4">
-
-            <div id="template-suggestion" class="mb-4">
-                <!-- Part 2 goes here -->
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-lg w-100">Build my own plan</button>
+            <hr class="my-4">
+
+            <div id="template-suggestion" class="mb-4">
+                <p class="text-muted">New to the area? Need Help? We have some suggestions.</p>
+                <button type="button" class="btn btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#templateModal">
+                Browse our templates</button>            
+            </div>
+
         </form>
     </div>
+    <!-- pop up modal -->
+    <div class="modal fade" id="templateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Choose a Template</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="Text-center mb-4" >
+                        <button type="button" class="btn btn-outline-success  audience-btn" data-audience="Solo" >Solo</button>
+                        <button type="button" class="btn btn-outline-success  audience-btn" data-audience="Couple" >Couple</button>
+                        <button type="button" class="btn btn-outline-success  audience-btn" data-audience="Family" >Family</button>
+                    </div>
+                    <div id="template-cards"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Template fetch
+        let allTemplates = [];
+        fetch('../api/templates.php')
+            .then(response => response.json())
+            .then(data => { allTemplates = data.templates; });
 
+        document.querySelectorAll('.audience-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.audience-btn').forEach(b => b.classList.remove('btn-success', 'text-white'));
+                btn.classList.add('btn-success', 'text-white');
+                showTemplatesFor(btn.dataset.audience);
+            });
+        });
+
+        function showTemplatesFor(audience) {
+            const matches = allTemplates.filter(t => t.audience === audience);
+            const container = document.getElementById('template-cards');
+
+            if (matches.length === 0) {
+                container.innerHTML = `<p class="text-muted text-center">No templates Available for ${audience}.</p>`;
+                return;
+            }
+
+            container.innerHTML = matches.map(t => {
+                const totalMinutes = t.places.reduce((sum, p) => sum + p.visit_duration, 0);
+                const hours = Math.floor(totalMinutes / 60);
+                const mins = totalMinutes % 60;
+
+                return `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">${t.template_name}</h5>
+                            <p class="card-text">${t.places.length} place(s) &middot; approx. ${hours}h ${mins}m</p>
+                            <button type="button" class="btn btn-success view-plan-btn" data-template-id="${t.template_id}">
+                                View Plan
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.view-plan-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tid = parseInt(btn.dataset.templateId);
+                    const template = allTemplates.find(t => t.template_id === tid);
+                    startPlan(template.places);   
+                });
+            });
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 </body>
 </html>

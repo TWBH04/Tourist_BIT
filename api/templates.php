@@ -3,7 +3,7 @@ require __DIR__.'/Bootstrap.php';
 
 #template query
 try{
-    $rows=dbc()->query('SELECT t.template_id, t.template_name,
+    $rows=dbc()->query('SELECT t.template_id, t.template_name,t.audience,
     p.place_id,p.name,p.visit_duration,p.latitude,p.longitude,
     tp.order_index
     FROM template t
@@ -12,6 +12,7 @@ try{
     ORDER BY t.template_id,tp.order_index'
     )->fetchAll();
 
+
     $templates=[];
     foreach($rows as $r){
         $tid =(int)$r['template_id'];
@@ -19,6 +20,7 @@ try{
             $templates[$tid]=
             ['template_id'=>$tid,
             'template_name'=>$r['template_name'],
+            'audience'=>$r['audience'],
             'places'=>[]];
             
         }

@@ -1,5 +1,6 @@
 config/config.php
 .env
+sql/additions.txt
 
 .DS_Store
 Thumbs.db
