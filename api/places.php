@@ -5,12 +5,12 @@ $where  = [];
 $paramits = [];
 
 #filters
-if(!empty($$_GET['category'])){
+if(!empty($_GET['category'])){
     $ids=array_filter(array_map('intval', explode(',', (string)$_GET['category'])),
         fn($n) => $n > 0
     );
     if($ids){
-        $where[] = 'category_id IN ('.implode(',', array_fill(0,count($ids),'?')).')';
+        $where[] = 'p.category_id IN ('.implode(',', array_fill(0,count($ids),'?')).')';
         $paramits=array_merge($paramits,array_values($ids));
     }
 }
