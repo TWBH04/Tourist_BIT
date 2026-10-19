@@ -9,9 +9,9 @@ if(!$id || $id <1){
 
 #pull query
 try{
-    $st=dbc()->prepare( 'SELECT p.* , c.categoty name, c.is_outdoor,
+    $st=dbc()->prepare( 'SELECT p.* , c.category_name, c.is_outdoor
     FROM place p
-    JOIN category c ON c.category_id=p.categry_id
+    JOIN category c ON c.category_id=p.category_id
     WHERE p.place_id=?');
     $st->execute([$id]);
     $row=$st->fetch();

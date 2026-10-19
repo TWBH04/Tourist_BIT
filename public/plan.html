@@ -26,9 +26,9 @@
 <body>
         <div class="container-fluid">
         <div class="row">
-
+            <!-- sidebar -->
             <div class="col-md-5 sidebar p-3">
-
+                <!-- sidebar section 1 -->
                 <div id="explore-section" class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0">Explore</h5>
@@ -45,7 +45,7 @@
                 </div>
 
                 <hr>
-
+                <!-- sidebar secction 2 -->
                 <div id="plan-section">
                     <h5>Places you selected</h5>
                     <div id="plan-list">
@@ -57,11 +57,20 @@
                 </div>
 
             </div>
-
+            <!-- map -->
             <div class="col-md-7 p-0">
                 <div id="map"></div>
             </div>
-
+        </div>
+        <!-- plac detail panel -->
+        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="detailOffcanvas" style="height: 35vh;">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="detail-name"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body" id="detail-body">
+                <!-- filled by JS -->
+            </div>
         </div>
     </div>
 
@@ -73,112 +82,153 @@
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         }).addTo(map);
-    // places fetch to cards and markersd
-    let markers = [];
-    function loadPlaces(url = '../api/places.php') {
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                renderMarkers(data.places);
-                renderCards(data.places);
+        // places fetch to cards and markersd
+        let markers = [];
+        function loadPlaces(url = '../api/places.php') {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    renderMarkers(data.places);
+                    renderCards(data.places);
+                });
+        }
+        // markers on map
+        function renderMarkers(places) {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            places.forEach(place => {
+                const marker = L.marker([place.latitude, place.longitude]).addTo(map);
+                marker.bindPopup(`<strong>${place.name}</strong>`);
+                marker.on('click', () => showPlaceDetail(place.place_id));
+                markers.push(marker);
             });
-    }
-    // markers on map
-    function renderMarkers(places) {
-        markers.forEach(m => map.removeLayer(m));
-        markers = [];
+        }
+        // cards of places
+        function renderCards(places){
+            renderPreviewCards(places);
+            renderAllCards(places);
+        }
 
-        places.forEach(place => {
-            const marker = L.marker([place.latitude, place.longitude]).addTo(map);
-            marker.bindPopup(`<strong>${place.name}</strong>`);
-            markers.push(marker);
-        });
-    }
-    // cards of places
-    function renderCards(places){
-        renderPreviewCards(places);
-        renderAllCards(places);
-    }
+        function renderPreviewCards(places) {
+            const preview = places.slice(0, 3);
+            const container = document.getElementById('preview-cards');
+            const placeholderImg = 'https://placehold.co/300x200?text=DayQuest';
+            container.innerHTML = preview.map(place => `
+            <div class="preview-card place-card" data-place-id="${place.place_id}" style="cursor:pointer;">
+                <img src="${place.thumbnail || placeholderImg}" alt="${place.name}">
+                <h6 class="mt-1 mb-0" style="font-size: 0.85rem;">${place.name}</h6>
+                <p class="text-muted mb-0" style="font-size: 0.75rem;">${place.category_name} &middot; ${place.distance_from_panadura} km</p>
+            </div>
+            `).join('');
+                container.querySelectorAll('.place-card').forEach(card => {
+                card.addEventListener('click', () => showPlaceDetail(card.dataset.placeId));
+            });
+        }
 
-    function renderPreviewCards(places) {
-        const preview = places.slice(0, 3);
-        const container = document.getElementById('preview-cards');
-        const placeholderImg = 'https://placehold.co/300x200?text=DayQuest';
-        container.innerHTML = preview.map(place => `
-        <div class="preview-card">
-            <img src="${place.thumbnail || placeholderImg}" alt="${place.name}">
-            <h6 class="mt-1 mb-0" style="font-size: 0.85rem;">${place.name}</h6>
-            <p class="text-muted mb-0" style="font-size: 0.75rem;">${place.category_name} &middot; ${place.distance_from_panadura} km</p>
-        </div>
-        `).join('');
-    }
-
-    function renderAllCards(places) {
-        const container = document.getElementById('place-cards');
-        const placeholderImg = 'https://placehold.co/300x200?text=DayQuest';
-        container.innerHTML = places.map(place => `
-            <div class="card mb-2">
-                <div class="d-flex">
-                    <img src="${place.thumbnail || placeholderImg}" alt="${place.name}" style="width:80px; height:80px; object-fit:cover; border-radius:4px 0 0 4px;">
-                    <div class="card-body p-2">
-                        <h6 class="card-title mb-1">${place.name}</h6>
-                        <p class="card-text small text-muted mb-0">${place.category_name} &middot; ${place.distance_from_panadura} km</p>
+        function renderAllCards(places) {
+            const container = document.getElementById('place-cards');
+            const placeholderImg = 'https://placehold.co/300x200?text=DayQuest';
+            container.innerHTML = places.map(place => `
+                <div class="card mb-2 place-card" data-place-id="${place.place_id}" style="cursor:pointer;">
+                    <div class="d-flex">
+                        <img src="${place.thumbnail || placeholderImg}" alt="${place.name}" style="width:80px; height:80px; object-fit:cover; border-radius:4px 0 0 4px;">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-1">${place.name}</h6>
+                            <p class="card-text small text-muted mb-0">${place.category_name} &middot; ${place.distance_from_panadura} km</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
-    }
-    // browseall switch
-    let activeCategory = null;
-    document.getElementById('browse-all-btn').addEventListener('click', () => {
-        const preview = document.getElementById('preview-cards');
-        const panel = document.getElementById('explore-panel');
-        const isOpening = panel.style.display === 'none';
-        console.log('isOpening:', isOpening, 'panel display was:', panel.style.display);
-
-        panel.style.display = isOpening ? 'block' : 'none';
-        preview.classList.toggle('d-none', isOpening);
-    });
-
-    fetch('../api/category.php')
-        .then(response => response.json())
-        .then(data => renderCategoryButtons(data.categories));
-
-    function renderCategoryButtons(categories) {
-        const container = document.getElementById('category-buttons');
-        container.innerHTML = categories.map(cat => `
-            <button type="button" class="btn btn-outline-success btn-sm me-1 mb-1 category-btn" data-id="${cat.category_id}">
-                ${cat.category_name}
-            </button>
-        `).join('');
-
-        container.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = parseInt(btn.dataset.id);
-                activeCategory = (activeCategory === id) ? null : id;
-
-                container.querySelectorAll('.category-btn').forEach(b => b.classList.remove('btn-success', 'text-white'));
-                if (activeCategory !== null) {
-                    btn.classList.add('btn-success', 'text-white');
-                }
-
-                applyFilters();
+            `).join('');
+                container.querySelectorAll('.place-card').forEach(card => {
+                card.addEventListener('click', () => showPlaceDetail(card.dataset.placeId));
             });
+        }
+        // browseall switch
+        let activeCategory = null;
+        document.getElementById('browse-all-btn').addEventListener('click', () => {
+            const preview = document.getElementById('preview-cards');
+            const panel = document.getElementById('explore-panel');
+            const isOpening = panel.style.display === 'none';
+            console.log('isOpening:', isOpening, 'panel display was:', panel.style.display);
+
+            panel.style.display = isOpening ? 'block' : 'none';
+            preview.classList.toggle('d-none', isOpening);
         });
-    }
 
-    document.getElementById('search-input').addEventListener('input', applyFilters);
+        fetch('../api/category.php')
+            .then(response => response.json())
+            .then(data => renderCategoryButtons(data.categories));
 
-    function applyFilters() {
-        const params = new URLSearchParams();
-        if (activeCategory !== null) params.set('category', activeCategory);
-        const keyword = document.getElementById('search-input').value.trim();
-        if (keyword) params.set('q', keyword);
+        function renderCategoryButtons(categories) {
+            const container = document.getElementById('category-buttons');
+            container.innerHTML = categories.map(cat => `
+                <button type="button" class="btn btn-outline-success btn-sm me-1 mb-1 category-btn" data-id="${cat.category_id}">
+                    ${cat.category_name}
+                </button>
+            `).join('');
 
-        loadPlaces(`../api/places.php?${params.toString()}`);
-    }
+            container.querySelectorAll('.category-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.dataset.id);
+                    activeCategory = (activeCategory === id) ? null : id;
 
-    loadPlaces();
+                    container.querySelectorAll('.category-btn').forEach(b => b.classList.remove('btn-success', 'text-white'));
+                    if (activeCategory !== null) {
+                        btn.classList.add('btn-success', 'text-white');
+                    }
+
+                    applyFilters();
+                });
+            });
+        }
+
+        document.getElementById('search-input').addEventListener('input', applyFilters);
+
+        function applyFilters() {
+            const params = new URLSearchParams();
+            if (activeCategory !== null) params.set('category', activeCategory);
+            const keyword = document.getElementById('search-input').value.trim();
+            if (keyword) params.set('q', keyword);
+
+            loadPlaces(`../api/places.php?${params.toString()}`);
+        }
+
+        loadPlaces();
+
+        // place details script
+        function showPlaceDetail(placeId) {
+            fetch(`../api/place.php?id=${placeId}`)
+                .then(response => response.json())
+                .then(data => renderDetail(data.place));
+        }
+
+        function renderDetail(place) {
+            document.getElementById('detail-name').textContent = place.name;
+
+            document.getElementById('detail-body').innerHTML = `
+                <p>${place.description || ''}</p>
+                <ul class="list-unstyled small">
+                    <li><strong>Category:</strong> ${place.category_name}</li>
+                    <li><strong>Opening hours:</strong> ${place.opening_hours || 'Not available'}</li>
+                    <li><strong>Average visit duration:</strong> ${place.visit_duration} minutes</li>
+                    <li><strong>Distance from Panadura:</strong> ${place.distance_from_panadura} km</li>
+                    <li><strong>Entrance fee:</strong> ${place.entrance_fee || 'Not available'}</li>
+                    <li><strong>Accessibility:</strong> ${place.accessibility_info || 'Not available'}</li>
+                    <li><strong>Travel tips:</strong> ${place.travel_tips || 'Not available'}</li>
+                </ul>
+                <button type="button" class="btn btn-success w-100" id="add-to-plan-btn" data-place-id="${place.place_id}">
+                    Add to Plan
+                </button>
+            `;
+
+            const offcanvas = new bootstrap.Offcanvas(document.getElementById('detailOffcanvas'));
+            offcanvas.show();
+
+            document.getElementById('add-to-plan-btn').addEventListener('click', () => {
+                // Part 6, next stage
+            });
+        }
     </script>
 </body>
 </html>
