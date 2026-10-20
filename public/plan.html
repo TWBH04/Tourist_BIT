@@ -234,7 +234,7 @@
                 addToPlan(place.place_id);
             });
         }
-        
+
         // Add place to plan and local storage
         const PLAN_KEY = 'DayQuestPlan';   
 
@@ -268,7 +268,7 @@
             const offcanvasEl = document.getElementById('detailOffcanvas');
             bootstrap.Offcanvas.getInstance(offcanvasEl).hide();
         }
-
+        // selected plans list
         function renderPlanList() {
             const plan = getPlan();
             const container = document.getElementById('plan-list');
@@ -289,9 +289,17 @@
                     <div class="card mb-2">
                         <div class="card-body p-2 d-flex justify-content-between align-items-center">
                             <span>${plan.places[i].order}. ${res.place.name}</span>
-                            <button type="button" class="btn btn-sm btn-outline-danger remove-place-btn" data-place-id="${res.place.place_id}">
-                                Remove
-                            </button>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary move-up-btn" data-place-id="${res.place.place_id}" ${i === 0 ? 'disabled' : ''}>
+                                    <i class="bi bi-arrow-up"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary move-down-btn" data-place-id="${res.place.place_id}" ${i === results.length - 1 ? 'disabled' : ''}>
+                                    <i class="bi bi-arrow-down"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-place-btn" data-place-id="${res.place.place_id}">
+                                    Remove
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `).join('');
@@ -299,13 +307,34 @@
                 container.querySelectorAll('.remove-place-btn').forEach(btn => {
                     btn.addEventListener('click', () => removeFromPlan(parseInt(btn.dataset.placeId)));
                 });
+                container.querySelectorAll('.move-up-btn').forEach(btn => {
+                    btn.addEventListener('click', () => movePlace(parseInt(btn.dataset.placeId), -1));
+                });
+                container.querySelectorAll('.move-down-btn').forEach(btn => {
+                    btn.addEventListener('click', () => movePlace(parseInt(btn.dataset.placeId), 1));
+                });
             });
         }
-
+        // removing place from list
         function removeFromPlan(placeId) {
             const plan = getPlan();
             plan.places = plan.places.filter(p => p.place_id !== placeId);
             plan.places.forEach((p, i) => p.order = i + 1);   
+            savePlan(plan);
+            renderPlanList();
+        }
+        // move place in list
+        function movePlace(placeId, direction) {
+            const plan = getPlan();
+            const index = plan.places.findIndex(p => p.place_id === placeId);
+            const swapIndex = index + direction;
+
+            if (swapIndex < 0 || swapIndex >= plan.places.length) return;
+
+            [plan.places[index], plan.places[swapIndex]] = [plan.places[swapIndex], plan.places[index]];
+
+            plan.places.forEach((p, i) => p.order = i + 1);
+
             savePlan(plan);
             renderPlanList();
         }
@@ -349,12 +378,23 @@
                 }
             }
 
-            function formatMinutes(totalMinutes) {
-                const hours = Math.floor(totalMinutes / 60);
-                const mins = totalMinutes % 60;
-                return `${hours}h ${mins}m`;
-            }
-        
+        function formatMinutes(totalMinutes) {
+            const hours = Math.floor(totalMinutes / 60);
+            const mins = totalMinutes % 60;
+            return `${hours}h ${mins}m`;
+        }
+
+        // strt trip button
+        document.getElementById('start-trip-btn').addEventListener('click', () => {
+        const plan = getPlan();
+
+        if (plan.places.length === 0) {
+            alert('Add at least one place to your plan before starting your trip.');
+            return;
+        }
+
+        window.location.href = 'trip.html';
+    });
     </script>
 </body>
 </html>
