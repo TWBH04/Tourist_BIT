@@ -13,7 +13,7 @@
 
         <form id="setup-form">
             <div class="mb-3">
-                <label for="plan-name" class="form-label">Plan name</label>
+                <label for="plan-name" class="form-label">Plan name</label><div id="selected-template-note" class="form-text"></div>
                 <input type="text" class="form-control" id="plan-name" value="Visit Plan" required>
             </div>
 
@@ -34,7 +34,7 @@
                 </div>
             </div>
 
-            <a href="plan.html" class="btn btn-primary btn-lg w-100">Build my own plan</a>
+            <button type="submit" class="btn btn-primary btn-lg w-100">Create Plan</button>
             <hr class="my-4">
 
             <div id="template-suggestion" class="mb-4">
@@ -65,7 +65,58 @@
         </div>
     </div>
     <script>
-        // Template fetch
+        // localstorage creation for plan
+        const PLAN_KEY = 'DayQuestPlan';
+
+        function buildAndSavePlan(templatePlaces) {
+            const planName = document.getElementById('plan-name').value.trim() || 'Visit Plan';
+            const date = document.getElementById('visit-date').value;
+            const startTime = document.getElementById('Start-Time').value;
+            const endTime = document.getElementById('End-Time').value;
+
+            if (!date || !startTime || !endTime) {
+                alert('Please fill in the date and start/end time before continuing.');
+                return;
+            }
+
+            const places = templatePlaces.map((p, i) => ({
+                place_id: p.place_id,
+                order: i + 1,
+                visited: false
+            }));
+
+            const plan = {
+                plan_name: planName,
+                date: date,
+                start_time: startTime,
+                end_time: endTime,
+                places: places
+            };
+
+            localStorage.setItem(PLAN_KEY, JSON.stringify(plan));
+            window.location.href = 'plan.html';
+        }
+        // forum submit
+        document.getElementById('setup-form').addEventListener('submit', (event) => {
+            event.preventDefault();
+            buildAndSavePlan(selectedTemplatePlaces);
+        });
+
+        // template forwading 
+        let selectedTemplatePlaces = [];
+
+        function selectTemplate(template) {
+            selectedTemplatePlaces = template.places;
+            document.getElementById('plan-name').value = template.template_name;
+            document.getElementById('selected-template-note').textContent = `Selected Template: ${template.template_name} (${template.places.length} places)`;
+            
+            document.querySelector('#setup-form button[type="submit"]').textContent = 'Create Plan from Template';
+
+            const modalEl = document.getElementById('templateModal');
+            bootstrap.Modal.getInstance(modalEl).hide();
+        }
+
+        // Template fetch for template view
         let allTemplates = [];
         fetch('../api/templates.php')
             .then(response => response.json())
@@ -98,19 +149,19 @@
                         <div class="card-body">
                             <h5 class="card-title">${t.template_name}</h5>
                             <p class="card-text">${t.places.length} place(s) &middot; approx. ${hours}h ${mins}m</p>
-                            <button type="button" class="btn btn-success view-plan-btn" data-template-id="${t.template_id}">
-                                View Plan
+                            <button type="button" class="btn btn-success Select-template-btn" data-template-id="${t.template_id}">
+                                Select Plan
                             </button>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            container.querySelectorAll('.view-plan-btn').forEach(btn => {
+            container.querySelectorAll('.Select-template-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const tid = parseInt(btn.dataset.templateId);
                     const template = allTemplates.find(t => t.template_id === tid);
-                    startPlan(template.places);   
+                    selectTemplate(template);   
                 });
             });
         }
