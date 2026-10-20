@@ -48,6 +48,7 @@
                 <!-- sidebar secction 2 -->
                 <div id="plan-section">
                     <h5>Places you selected</h5>
+                    <div id="plan-summary" class="mb-2"></div>
                     <div id="plan-list">
                         <p class="text-muted">No places added yet.</p>
                     </div>
@@ -69,7 +70,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
             </div>
             <div class="offcanvas-body" id="detail-body">
-                <!-- filled by JS -->
+                <!-- JS part -->
             </div>
         </div>
     </div>
@@ -82,6 +83,7 @@
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         }).addTo(map);
+
         // places fetch to cards and markersd
         let markers = [];
         function loadPlaces(url = '../api/places.php') {
@@ -92,6 +94,7 @@
                     renderCards(data.places);
                 });
         }
+
         // markers on map
         function renderMarkers(places) {
             markers.forEach(m => map.removeLayer(m));
@@ -104,6 +107,7 @@
                 markers.push(marker);
             });
         }
+
         // cards of places
         function renderCards(places){
             renderPreviewCards(places);
@@ -144,6 +148,7 @@
                 card.addEventListener('click', () => showPlaceDetail(card.dataset.placeId));
             });
         }
+
         // browseall switch
         let activeCategory = null;
         document.getElementById('browse-all-btn').addEventListener('click', () => {
@@ -155,7 +160,7 @@
             panel.style.display = isOpening ? 'block' : 'none';
             preview.classList.toggle('d-none', isOpening);
         });
-
+        
         fetch('../api/category.php')
             .then(response => response.json())
             .then(data => renderCategoryButtons(data.categories));
@@ -226,9 +231,130 @@
             offcanvas.show();
 
             document.getElementById('add-to-plan-btn').addEventListener('click', () => {
-                // Part 6, next stage
+                addToPlan(place.place_id);
             });
         }
+        
+        // Add place to plan and local storage
+        const PLAN_KEY = 'DayQuestPlan';   
+
+        function getPlan() {
+            const saved = localStorage.getItem(PLAN_KEY);
+            if (saved) return JSON.parse(saved);
+
+            // fallback, in case someone lands here with no plan started yet
+            return { plan_name: 'Visit Plan', date: '', start_time: '', end_time: '', places: [] };
+        }
+
+        function savePlan(plan) {
+            localStorage.setItem(PLAN_KEY, JSON.stringify(plan));
+        }
+
+        function addToPlan(placeId) {
+            const plan = getPlan();
+
+            const alreadyAdded = plan.places.some(p => p.place_id === placeId);
+            if (alreadyAdded) {
+                alert('This place is already in your plan.');
+                return;
+            }
+
+            const nextOrder = plan.places.length + 1;
+            plan.places.push({ place_id: placeId, order: nextOrder, visited: false });
+
+            savePlan(plan);
+            renderPlanList();
+
+            const offcanvasEl = document.getElementById('detailOffcanvas');
+            bootstrap.Offcanvas.getInstance(offcanvasEl).hide();
+        }
+
+        function renderPlanList() {
+            const plan = getPlan();
+            const container = document.getElementById('plan-list');
+
+            if (plan.places.length === 0) {
+                container.innerHTML = '<p class="text-muted">No places added yet.</p>';
+                return;
+            }
+
+            container.innerHTML = '<p class="text-muted">Loading...</p>';
+
+            Promise.all(
+                plan.places.map(p => fetch(`../api/place.php?id=${p.place_id}`).then(r => r.json()))
+            ).then(results => {
+                const totalVisitMinutes = results.reduce((sum, res) => sum + res.place.visit_duration, 0);
+                renderPlanSummary(plan, totalVisitMinutes);
+                container.innerHTML = results.map((res, i) => `
+                    <div class="card mb-2">
+                        <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                            <span>${plan.places[i].order}. ${res.place.name}</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-place-btn" data-place-id="${res.place.place_id}">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.querySelectorAll('.remove-place-btn').forEach(btn => {
+                    btn.addEventListener('click', () => removeFromPlan(parseInt(btn.dataset.placeId)));
+                });
+            });
+        }
+
+        function removeFromPlan(placeId) {
+            const plan = getPlan();
+            plan.places = plan.places.filter(p => p.place_id !== placeId);
+            plan.places.forEach((p, i) => p.order = i + 1);   
+            savePlan(plan);
+            renderPlanList();
+        }
+
+        renderPlanList();   // run once on page load, in case a plan already has places
+
+        // plan time and remaining time calculation 
+        function timeStringToMinutes(timeStr) {
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function renderPlanSummary(plan, totalVisitMinutes) {
+                const summaryEl = document.getElementById('plan-summary');
+                if (!plan.start_time || !plan.end_time) {
+                    summaryEl.innerHTML = `<p class="small text-muted">Total visit time: ${formatMinutes(totalVisitMinutes)}</p>`;
+                    return;
+                }
+
+                const availableMinutes = timeStringToMinutes(plan.end_time) - timeStringToMinutes(plan.start_time);
+                const percentUsed = totalVisitMinutes / availableMinutes;
+                const timeText = formatMinutes(totalVisitMinutes);
+                const windowText = `${plan.start_time}–${plan.end_time}`;
+                const travelNote = `Travel time between stops isn't included here.`;
+
+                if (percentUsed > 1) {
+                    summaryEl.innerHTML = `
+                        <p class="small text-danger fw-bold mb-0">
+                            Total visit time (${timeText}) exceeds your ${windowText} window. ${travelNote}
+                        </p>`;
+                } else if (percentUsed >= 0.8) {
+                    summaryEl.innerHTML = `
+                        <p class="small text-warning fw-bold mb-0">
+                            You're nearing your ${windowText} window (${timeText} so far). ${travelNote}
+                        </p>`;
+                } else {
+                    summaryEl.innerHTML = `
+                        <p class="small text-muted mb-0">
+                            Total visit time: ${timeText}, within your ${windowText} window.
+                        </p>`;
+                }
+            }
+
+            function formatMinutes(totalMinutes) {
+                const hours = Math.floor(totalMinutes / 60);
+                const mins = totalMinutes % 60;
+                return `${hours}h ${mins}m`;
+            }
+        
     </script>
 </body>
 </html>
