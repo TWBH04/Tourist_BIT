@@ -61,10 +61,11 @@
             <!-- map -->
             <div class="col-md-7 p-0">
                 <div id="map"></div>
+                
             </div>
         </div>
         <!-- plac detail panel -->
-        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="detailOffcanvas" style="height: 35vh;">
+        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="detailOffcanvas" data-bs-backdrop="false" style="height: 35vh;left: 41.6667%;">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="detail-name"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
@@ -226,6 +227,8 @@
                     Add to Plan
                 </button>
             `;
+            // map zoom in 
+            map.setView([place.latitude, place.longitude], 14);
 
             const offcanvas = new bootstrap.Offcanvas(document.getElementById('detailOffcanvas'));
             offcanvas.show();
