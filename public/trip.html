@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <style>
+        html, body { height: 100%; margin: 0; }
+        #map { height: 100vh; }
+        .sidebar { height: 100vh; overflow-y: auto; border-right: 5px solid #dee2e6; }
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DayQuest — Your Trip</title>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+
+            <div class="col-md-5 sidebar p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0" id="trip-plan-name">Your Trip</h5>
+                    <a href="plan.html" class="btn btn-outline-secondary btn-sm">Edit plan</a>
+                </div>
+
+                <div id="trip-progress" class="mb-3"></div>
+                <div id="route-info" class="mb-2"></div>
+                <div id="next-stop-card" class="mb-4"></div>
+
+                <hr>
+
+                <h6>Itinerary</h6>
+                <div id="itinerary-list"></div>
+            </div>
+
+            <div class="col-md-7 p-0">
+                <div id="map"></div>
+                <!-- plac detail panel -->
+                <div class="offcanvas offcanvas-bottom" tabindex="-1" id="currentStopOffcanvas" data-bs-backdrop="false" data-bs-scroll="true" style="height: 35vh; left: 41.6667%;">
+                    <div class="offcanvas-header">
+                        <h5 class="offcanvas-title" id="current-stop-name"></h5>
+                    </div>
+                    <div class="offcanvas-body" id="current-stop-body" style="overflow-y:auto;">
+                        <!--  JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script>
+        const PLAN_KEY = 'DayQuestPlan';
+
+        function getPlan() {
+            const saved = localStorage.getItem(PLAN_KEY);
+            return saved ? JSON.parse(saved) : null;
+        }
+
+        function savePlan(plan) {
+            localStorage.setItem(PLAN_KEY, JSON.stringify(plan));
+        }
+
+        const plan = getPlan();
+        if (!plan || plan.places.length === 0) {
+            alert('No active plan found. Redirecting you to set one up.');
+            window.location.href = 'plan-setup.html';
+        } else {
+            document.getElementById('trip-plan-name').textContent = plan.plan_name;
+        }
+
+        const map = L.map('map').setView([6.713, 79.906], 12);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(map);
+
+        // list place details
+        let tripMarkers = [];
+
+        function loadTripPlaces() {
+            const planNow = getPlan();
+
+            Promise.all(
+                planNow.places.map(p => fetch(`../api/place.php?id=${p.place_id}`).then(r => r.json()))
+            ).then(results => {
+                const placesWithStatus = results.map((res, i) => ({
+                    ...res.place,
+                    visited: planNow.places[i].visited,
+                    order: planNow.places[i].order
+                }));
+
+                renderProgress(placesWithStatus);
+                renderItineraryList(placesWithStatus);
+                renderTripMarkers(placesWithStatus);
+                showCurrentStop(placesWithStatus);
+                updateRoute(placesWithStatus); // routing update for next stop
+            });
+        }
+
+        function renderProgress(places) {
+            const visitedCount = places.filter(p => p.visited).length;
+            document.getElementById('trip-progress').innerHTML = `
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-success" style="width: ${(visitedCount / places.length) * 100}%">
+                        ${visitedCount} of ${places.length} visited
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderItineraryList(places) {
+            const container = document.getElementById('itinerary-list');
+            container.innerHTML = places.map(place => `
+                <div class="card mb-2 ${place.visited ? 'border-success' : ''}">
+                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                        <span class="${place.visited ? 'text-decoration-line-through text-muted' : ''}">
+                            ${place.order}. ${place.name}
+                        </span>
+                        ${place.visited
+                            ? '<span class="badge bg-success">Visited</span>'
+                            : '<span class="badge bg-secondary">Not yet</span>'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderTripMarkers(places) {
+            tripMarkers.forEach(m => map.removeLayer(m));
+            tripMarkers = [];
+
+            places.forEach(place => {
+                const icon = place.visited
+                    ? L.icon({ iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', iconSize: [20, 33] })
+                    : L.icon({ iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png', iconSize: [25, 41] });
+
+                const marker = L.marker([place.latitude, place.longitude], { icon }).addTo(map);
+                tripMarkers.push(marker);
+            });
+        }
+
+        function showCurrentStop(places) {
+            const current = places.find(p => !p.visited);
+
+            const titleEl = document.getElementById('current-stop-name');
+            const bodyEl = document.getElementById('current-stop-body');
+
+            if (!current) {
+                titleEl.textContent = 'Trip complete!';
+                bodyEl.innerHTML = `<p>You've visited every place in your plan. Great day out!</p>`;
+                new bootstrap.Offcanvas(document.getElementById('currentStopOffcanvas')).show();
+                return;
+            }
+
+            titleEl.textContent = `Stop ${current.order}: ${current.name}`;
+            bodyEl.innerHTML = `
+                <p>${current.description || ''}</p>
+                <ul class="list-unstyled small">
+                    <li><strong>Opening hours:</strong> ${current.opening_hours || 'Not available'}</li>
+                    <li><strong>Average visit duration:</strong> ${current.visit_duration} minutes</li>
+                    <li><strong>Entrance fee:</strong> ${current.entrance_fee || 'Not available'}</li>
+                    <li><strong>Travel tips:</strong> ${current.travel_tips || 'Not available'}</li>
+                </ul>
+                <button type="button" class="btn btn-success w-100" id="mark-visited-btn" data-place-id="${current.place_id}">
+                    Mark as Visited
+                </button>
+            `;
+
+            const visited = places.filter(p => p.visited);
+            const fromPoint = visited.length > 0
+                ? visited[visited.length - 1]
+                : { latitude: PANADURA_COORDS[0], longitude: PANADURA_COORDS[1] };
+
+            map.fitBounds([
+                [fromPoint.latitude, fromPoint.longitude],
+                [current.latitude, current.longitude]
+            ], { padding: [50, 50] });
+
+            const offcanvas = new bootstrap.Offcanvas(document.getElementById('currentStopOffcanvas'));
+            offcanvas.show();
+
+            document.getElementById('mark-visited-btn').addEventListener('click', () => {
+                markVisited(current.place_id);
+            });
+        }
+
+        function markVisited(placeId) {
+            const planNow = getPlan();
+            const entry = planNow.places.find(p => p.place_id === placeId);
+            entry.visited = true;
+            savePlan(planNow);
+            loadTripPlaces();
+        }
+
+        loadTripPlaces();
+        
+        // routing plces
+    let routingControl = null;
+    let startMarker = null;
+    const PANADURA_COORDS = [6.713, 79.906];
+
+    function updateRoute(places) {
+        const visited = places.filter(p => p.visited);
+        const next = places.find(p => !p.visited);
+
+        if (routingControl) {
+            map.removeControl(routingControl);
+            routingControl = null;
+        }
+        // marker for start
+        if (startMarker) {
+            map.removeLayer(startMarker);
+            startMarker = null;
+        }
+
+        if (!next) {
+            document.getElementById('route-info').innerHTML = '';
+            return;
+        }
+
+        const fromPoint = visited.length > 0
+            ? visited[visited.length - 1]
+            : { name: 'Panadura', latitude: PANADURA_COORDS[0], longitude: PANADURA_COORDS[1] };
+        
+            // diff icons for start
+        const startIcon = L.divIcon({
+            html: '<div style="background:#0d6efd; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 4px rgba(0,0,0,0.5);"></div>',
+            className: '',
+            iconSize: [16, 16]
+        });
+        startMarker = L.marker([fromPoint.latitude, fromPoint.longitude], { icon: startIcon })
+            .bindPopup(`<strong>Start: ${fromPoint.name}</strong>`)
+            .addTo(map);
+        
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(fromPoint.latitude, fromPoint.longitude),
+                L.latLng(next.latitude, next.longitude)
+            ],
+            routeWhileDragging: false,
+            addWaypoints: false,
+            draggableWaypoints: false,
+            fitSelectedRoutes: false,
+            show: false,
+            createMarker: () => null
+        }).addTo(map);
+
+        routingControl.on('routesfound', (e) => {
+            const route = e.routes[0];
+            const km = (route.summary.totalDistance / 1000).toFixed(1);
+            const mins = Math.round(route.summary.totalTime / 60);
+
+            document.getElementById('route-info').innerHTML = `
+                <p class="small text-muted mb-0">
+                    ${fromPoint.name} → ${next.name}: approx. ${km} km, ${mins} min
+                </p>`;
+        });
+    }
+    // numbered markers
+    function createNumberedIcon(number, visited) {
+        const bgColor = visited ? '#6c757d' : '#198754';
+        return L.divIcon({
+            html: `<div style="background:${bgColor}; color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white; box-shadow:0 0 4px rgba(0,0,0,0.5);">${number}</div>`,
+            className: '',
+            iconSize: [28, 28]
+        });
+    }
+
+    </script>
+</body>
+</html>
