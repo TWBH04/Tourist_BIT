@@ -25,6 +25,8 @@
                 </div>
 
                 <div id="trip-progress" class="mb-3"></div>
+                <button type="button" class="btn btn-success w-100 mb-3" id="start-journey-btn" style="display:none;">
+                Start Journey</button>
                 <div id="route-info" class="mb-2"></div>
                 <div id="next-stop-card" class="mb-4"></div>
 
@@ -96,9 +98,17 @@
 
                 renderProgress(placesWithStatus);
                 renderItineraryList(placesWithStatus);
-                renderTripMarkers(placesWithStatus);
-                showCurrentStop(placesWithStatus);
-                updateRoute(placesWithStatus); // routing update for next stop
+
+                // overview and trip switch
+                if (planNow.trip_started) {
+                    document.getElementById('start-journey-btn').style.display = 'none';
+                    renderTripMarkers(placesWithStatus);
+                    showCurrentStop(placesWithStatus);
+                    updateRoute(placesWithStatus); // routing update for next stop
+                } else {
+                    document.getElementById('start-journey-btn').style.display = 'block';
+                    renderOverviewMarkers(placesWithStatus);
+                }
             });
         }
 
@@ -200,76 +210,105 @@
         loadTripPlaces();
         
         // routing plces
-    let routingControl = null;
-    let startMarker = null;
-    const PANADURA_COORDS = [6.713, 79.906];
+        let routingControl = null;
+        let startMarker = null;
+        const PANADURA_COORDS = [6.713, 79.906];
 
-    function updateRoute(places) {
-        const visited = places.filter(p => p.visited);
-        const next = places.find(p => !p.visited);
+        function updateRoute(places) {
+            const visited = places.filter(p => p.visited);
+            const next = places.find(p => !p.visited);
 
-        if (routingControl) {
-            map.removeControl(routingControl);
-            routingControl = null;
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+            // marker for start
+            if (startMarker) {
+                map.removeLayer(startMarker);
+                startMarker = null;
+            }
+
+            if (!next) {
+                document.getElementById('route-info').innerHTML = '';
+                return;
+            }
+
+            const fromPoint = visited.length > 0
+                ? visited[visited.length - 1]
+                : { name: 'Panadura', latitude: PANADURA_COORDS[0], longitude: PANADURA_COORDS[1] };
+            
+                // diff icons for start
+            const startIcon = L.divIcon({
+                html: '<div style="background:#0d6efd; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 4px rgba(0,0,0,0.5);"></div>',
+                className: '',
+                iconSize: [16, 16]
+            });
+            startMarker = L.marker([fromPoint.latitude, fromPoint.longitude], { icon: startIcon })
+                .bindPopup(`<strong>Start: ${fromPoint.name}</strong>`)
+                .addTo(map);
+            
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(fromPoint.latitude, fromPoint.longitude),
+                    L.latLng(next.latitude, next.longitude)
+                ],
+                routeWhileDragging: false,
+                addWaypoints: false,
+                draggableWaypoints: false,
+                fitSelectedRoutes: false,
+                show: false,
+                createMarker: () => null
+            }).addTo(map);
+
+            routingControl.on('routesfound', (e) => {
+                const route = e.routes[0];
+                const km = (route.summary.totalDistance / 1000).toFixed(1);
+                const mins = Math.round(route.summary.totalTime / 60);
+
+                document.getElementById('route-info').innerHTML = `
+                    <p class="small text-muted mb-0">
+                        ${fromPoint.name} → ${next.name}: approx. ${km} km, ${mins} min
+                    </p>`;
+            });
         }
-        // marker for start
-        if (startMarker) {
-            map.removeLayer(startMarker);
-            startMarker = null;
+        // numbered markers
+        function createNumberedIcon(number, visited) {
+            const bgColor = visited ? '#6c757d' : '#198754';
+            return L.divIcon({
+                html: `<div style="background:${bgColor}; color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white; box-shadow:0 0 4px rgba(0,0,0,0.5);">${number}</div>`,
+                className: '',
+                iconSize: [28, 28]
+            });
         }
 
-        if (!next) {
-            document.getElementById('route-info').innerHTML = '';
-            return;
+        // marked plcaes
+        function renderOverviewMarkers(places) {
+            tripMarkers.forEach(m => map.removeLayer(m));
+            tripMarkers = [];
+
+            const bounds = [];
+
+            places.forEach(place => {
+                const marker = L.marker([place.latitude, place.longitude], {
+                    icon: createNumberedIcon(place.order, place.visited)
+                }).bindPopup(`<strong>${place.order}. ${place.name}</strong>`);
+
+                marker.addTo(map);
+                tripMarkers.push(marker);
+                bounds.push([place.latitude, place.longitude]);
+            });
+
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
         }
-
-        const fromPoint = visited.length > 0
-            ? visited[visited.length - 1]
-            : { name: 'Panadura', latitude: PANADURA_COORDS[0], longitude: PANADURA_COORDS[1] };
-        
-            // diff icons for start
-        const startIcon = L.divIcon({
-            html: '<div style="background:#0d6efd; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 4px rgba(0,0,0,0.5);"></div>',
-            className: '',
-            iconSize: [16, 16]
+        // start journey button
+        document.getElementById('start-journey-btn').addEventListener('click', () => {
+            const planNow = getPlan();
+            planNow.trip_started = true;
+            savePlan(planNow);
+            loadTripPlaces();
         });
-        startMarker = L.marker([fromPoint.latitude, fromPoint.longitude], { icon: startIcon })
-            .bindPopup(`<strong>Start: ${fromPoint.name}</strong>`)
-            .addTo(map);
-        
-        routingControl = L.Routing.control({
-            waypoints: [
-                L.latLng(fromPoint.latitude, fromPoint.longitude),
-                L.latLng(next.latitude, next.longitude)
-            ],
-            routeWhileDragging: false,
-            addWaypoints: false,
-            draggableWaypoints: false,
-            fitSelectedRoutes: false,
-            show: false,
-            createMarker: () => null
-        }).addTo(map);
-
-        routingControl.on('routesfound', (e) => {
-            const route = e.routes[0];
-            const km = (route.summary.totalDistance / 1000).toFixed(1);
-            const mins = Math.round(route.summary.totalTime / 60);
-
-            document.getElementById('route-info').innerHTML = `
-                <p class="small text-muted mb-0">
-                    ${fromPoint.name} → ${next.name}: approx. ${km} km, ${mins} min
-                </p>`;
-        });
-    }
-    // numbered markers
-    function createNumberedIcon(number, visited) {
-        const bgColor = visited ? '#6c757d' : '#198754';
-        return L.divIcon({
-            html: `<div style="background:${bgColor}; color:white; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; border:2px solid white; box-shadow:0 0 4px rgba(0,0,0,0.5);">${number}</div>`,
-            className: '',
-            iconSize: [28, 28]
-        });
-    }
 
     </script>
 </body>

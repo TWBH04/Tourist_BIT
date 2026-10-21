@@ -395,7 +395,8 @@
             alert('Add at least one place to your plan before starting your trip.');
             return;
         }
-
+        plan.trip_started = false;
+        savePlan(plan);
         window.location.href = 'trip.html';
     });
     </script>
