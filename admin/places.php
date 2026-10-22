@@ -47,6 +47,7 @@ $places = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="container">
             <span class="navbar-brand">DayQuest Admin</span>
             <span class="text-white">
+                Places &middot; <a href="templates.php" class="text-white">Templates</a>
                 Logged in as <?= htmlspecialchars($_SESSION['admin_username']) ?>
                 &middot; <a href="logout.php" class="text-white">Log out</a>
             </span>
