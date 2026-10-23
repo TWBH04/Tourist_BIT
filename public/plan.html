@@ -24,11 +24,21 @@
     <title>DayQuest-Plan</title>
 </head>
 <body>
-        <div class="container-fluid">
+    <nav class="navbar navbar-dark bg-dark sticky-top px-3">
+        <span class="navbar-brand mb-0">DayQuest</span>
+        <a href="#" class="text-white text-decoration-none" data-bs-toggle="modal" data-bs-target="#helpModal">
+        <i class="bi bi-question-circle"></i> Help
+        </a>
+    </nav>
+    <div class="container-fluid">
         <div class="row">
             <!-- sidebar -->
             <div class="col-md-5 sidebar p-3">
                 <!-- sidebar section 1 -->
+                <!-- overview  -->
+                    <div class="mb-3 pb-3 border-bottom" id="plan-info-bar">
+                        <!-- filled by JS -->
+                    </div>
                 <div id="explore-section" class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0">Explore</h5>
@@ -376,6 +386,7 @@
 
         renderPlanList();   // run once on page load, in case a plan already has places
         loadPlaces();
+        renderPlanInfoBar();
 
         // plan time and remaining time calculation 
         function timeStringToMinutes(timeStr) {
@@ -432,6 +443,50 @@
         savePlan(plan);
         window.location.href = 'trip.html';
     });
+    // plann overview section
+    function weatherCodeToWord(code) {
+        if (code === 0) return 'Sunny';
+        if ([1, 2, 3].includes(code)) return 'Cloudy';
+        if ([45, 48].includes(code)) return 'Foggy';
+        if ([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code)) return 'Rainy';
+        if ([95,96,99].includes(code)) return 'Stormy';
+        return 'Mixed';
+    }
+
+    function renderPlanInfoBar() {
+        const plan = getPlan();
+        const barEl = document.getElementById('plan-info-bar');
+
+        barEl.innerHTML = `
+            <strong>${plan.plan_name || 'Visit Plan'}</strong>
+            &middot; ${plan.date || 'No date set'}
+            &middot; ${plan.start_time || '--'}–${plan.end_time || '--'}
+            &middot; <span id="plan-weather-word">Checking weather...</span>
+        `;
+
+        if (plan.date) {
+            fetch(`../api/weather.php?date=${plan.date}`)
+                .then(response => response.json())
+                .then(data => {
+                    const wordEl = document.getElementById('plan-weather-word');
+                    wordEl.textContent = data.available ? weatherCodeToWord(data.weathercode) : 'Unknown';
+                });
+        }
+    }
     </script>
+    <div class="modal fade" id="helpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">How to use DayQuest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Browse places using the Explore section, add them to your plan, then click Confirm Places to start your trip.</p>
+                <p>Click a place's card or map marker to see full details, including weather for outdoor locations.</p>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
