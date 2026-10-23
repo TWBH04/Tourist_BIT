@@ -20,6 +20,18 @@
             object-fit: cover;
             border-radius: 8px;
         }
+        /* mobile layout */
+        @media (max-width: 767px) {
+            .sidebar, #map-col { width: 100%; }
+            #map-col.d-none-mobile, .sidebar.d-none-mobile { display: none; }
+            #mobile-view-toggle { display: block; }
+        }
+        @media (min-width: 768px) {
+            #mobile-view-toggle { display: none; }
+        }
+        @media (max-width: 767px) {
+            #detailOffcanvas { left: 0 !important; }
+        }
 
     </style>
     <meta charset="UTF-8">
@@ -33,6 +45,9 @@
         <i class="bi bi-question-circle"></i> Help
         </a>
     </nav>
+    <button type="button" class="btn btn-dark w-100 rounded-0" id="mobile-view-toggle" style="display:none;">
+        <i class="bi bi-map"></i> Show Map
+    </button>
     <div class="container-fluid">
         <div class="row">
             <!-- sidebar -->
@@ -73,7 +88,7 @@
                 </button>
             </div>
             <!-- map -->
-            <div class="col-md-7 p-0">
+            <div class="col-md-7 p-0" id="map-col">
                 <div id="map"></div>
                 
             </div>
@@ -242,6 +257,9 @@
                         <button type="button" class="btn btn-success btn-sm rounded-pill px-3" id="add-to-plan-btn" data-place-id="${place.place_id}">
                             <i class="bi bi-bookmark-plus"></i> Add to Plan
                         </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-md-none" id="view-on-map-btn">
+                            <i class="bi bi-geo-alt"></i> <span id="view-toggle-label">${mobileShowingMap ? 'Show List' : 'View on Map'}</span>
+                        </button>
                     </div>
                 </div>
 
@@ -270,6 +288,11 @@
 
             document.getElementById('add-to-plan-btn').addEventListener('click', () => {
                 addToPlan(place.place_id);
+            });
+            // mobile event listner
+            document.getElementById('view-on-map-btn').addEventListener('click', () => {
+                document.getElementById('mobile-view-toggle').click();
+                document.getElementById('view-toggle-label').textContent = mobileShowingMap ? 'Show List' : 'View on Map';
             });
 
             function loadWeatherForDetail() {
@@ -490,7 +513,20 @@
 
         renderPlanList();
     }
+    // mobile layout logic toggle
+    let mobileShowingMap = false;
 
+    document.getElementById('mobile-view-toggle').addEventListener('click', () => {
+        mobileShowingMap = !mobileShowingMap;
+        document.querySelector('.sidebar').classList.toggle('d-none-mobile', mobileShowingMap);
+        document.getElementById('map-col').classList.toggle('d-none-mobile', !mobileShowingMap);
+        document.getElementById('mobile-view-toggle').innerHTML = mobileShowingMap
+            ? '<i class="bi bi-list"></i> Show List'
+            : '<i class="bi bi-map"></i> Show Map';
+        if (mobileShowingMap) {
+            setTimeout(() => map.invalidateSize(), 200);
+        }
+    });
     </script>
     <div class="modal fade" id="helpModal" tabindex="-1">
     <div class="modal-dialog">
