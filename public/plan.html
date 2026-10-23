@@ -139,7 +139,9 @@
                     <div class="d-flex">
                         <img src="${place.thumbnail || placeholderImg}" alt="${place.name}" style="width:80px; height:80px; object-fit:cover; border-radius:4px 0 0 4px;">
                         <div class="card-body p-2">
-                            <h6 class="card-title mb-1">${place.name}</h6>
+                            <h6 class="card-title mb-1">
+                                ${place.name}
+                            </h6>
                             <p class="card-text small text-muted mb-0">${place.category_name} &middot; ${place.distance_from_panadura} km</p>
                         </div>
                     </div>
@@ -200,8 +202,6 @@
             loadPlaces(`../api/places.php?${params.toString()}`);
         }
 
-        loadPlaces();
-
         // place details script
         function showPlaceDetail(placeId) {
             fetch(`../api/place.php?id=${placeId}`)
@@ -214,6 +214,7 @@
 
             document.getElementById('detail-body').innerHTML = `
                 <p>${place.description || ''}</p>
+                <div id="detail-weather"></div>
                 <ul class="list-unstyled small">
                     <li><strong>Category:</strong> ${place.category_name}</li>
                     <li><strong>Opening hours:</strong> ${place.opening_hours || 'Not available'}</li>
@@ -227,6 +228,10 @@
                     Add to Plan
                 </button>
             `;
+            // weather loader per location
+            if (place.is_outdoor) {
+                loadWeatherForDetail();
+            }
             // map zoom in 
             map.setView([place.latitude, place.longitude], 14);
 
@@ -236,6 +241,33 @@
             document.getElementById('add-to-plan-btn').addEventListener('click', () => {
                 addToPlan(place.place_id);
             });
+
+            // weather func
+            function loadWeatherForDetail() {
+                const plan = getPlan();
+                const container = document.getElementById('detail-weather');
+                if (!plan.date) return;
+
+                container.innerHTML = `<p class="small text-muted">Checking weather...</p>`;
+
+                fetch(`../api/weather.php?date=${plan.date}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.available) {
+                            container.innerHTML = `<p class="small text-muted">Weather forecast not yet available for this date.</p>`;
+                        } else if (data.is_bad_weather) {
+                            container.innerHTML = `
+                                <div class="alert alert-warning py-2 px-2 small">
+                                    Rain expected on ${plan.date} (${data.temp_min}°–${data.temp_max}°C). This is an outdoor location.
+                                </div>`;
+                        } else {
+                            container.innerHTML = `
+                                <p class="small text-success mb-2">
+                                    Good weather expected on ${plan.date} (${data.temp_min}°–${data.temp_max}°C).
+                                </p>`;
+                        }
+                    });
+            }
         }
 
         // Add place to plan and local storage
@@ -343,6 +375,7 @@
         }
 
         renderPlanList();   // run once on page load, in case a plan already has places
+        loadPlaces();
 
         // plan time and remaining time calculation 
         function timeStringToMinutes(timeStr) {
