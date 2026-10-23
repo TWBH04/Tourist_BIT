@@ -79,13 +79,17 @@
             </div>
         </div>
         <!-- plac detail panel -->
-        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="detailOffcanvas" data-bs-backdrop="false" style="height: 35vh;left: 41.6667%;">
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="detail-name"></h5>
+        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="detailOffcanvas" data-bs-backdrop="false" style="height: 35vh; left: 41.6667%; border-radius: 20px 20px 0 0;">
+            <div class="offcanvas-header pb-2">
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                    <h5 class="offcanvas-title mb-0" id="detail-name"></h5>
+                    <span class="badge rounded-pill bg-secondary" id="detail-category"></span>
+                </div>
+                <div id="detail-weather" class="small fw-bold me-2"></div>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
             </div>
-            <div class="offcanvas-body" id="detail-body">
-                <!-- JS part -->
+            <div class="offcanvas-body" id="detail-body" style="overflow-y:auto;">
+                <!--  JS -->
             </div>
         </div>
     </div>
@@ -224,29 +228,41 @@
         }
 
         function renderDetail(place) {
+            const placeholderImg = 'https://placehold.co/300x200?text=DayQuest';
+
             document.getElementById('detail-name').textContent = place.name;
+            document.getElementById('detail-category').textContent = place.category_name;
 
             document.getElementById('detail-body').innerHTML = `
-                <p>${place.description || ''}</p>
-                <div id="detail-weather"></div>
-                <ul class="list-unstyled small">
-                    <li><strong>Category:</strong> ${place.category_name}</li>
-                    <li><strong>Opening hours:</strong> ${place.opening_hours || 'Not available'}</li>
-                    <li><strong>Average visit duration:</strong> ${place.visit_duration} minutes</li>
-                    <li><strong>Distance from Panadura:</strong> ${place.distance_from_panadura} km</li>
-                    <li><strong>Entrance fee:</strong> ${place.entrance_fee || 'Not available'}</li>
-                    <li><strong>Accessibility:</strong> ${place.accessibility_info || 'Not available'}</li>
-                    <li><strong>Travel tips:</strong> ${place.travel_tips || 'Not available'}</li>
-                </ul>
-                <button type="button" class="btn btn-success w-100" id="add-to-plan-btn" data-place-id="${place.place_id}">
-                    Add to Plan
-                </button>
+                <div class="d-flex gap-3 mb-2">
+                    <img src="${place.thumbnail || placeholderImg}" alt="${place.name}"
+                        style="width:100px; height:100px; object-fit:cover; border-radius:12px; flex-shrink:0;">
+                    <div>
+                        <p class="small mb-2">${place.description || ''}</p>
+                        <button type="button" class="btn btn-success btn-sm rounded-pill px-3" id="add-to-plan-btn" data-place-id="${place.place_id}">
+                            <i class="bi bi-bookmark-plus"></i> Add to Plan
+                        </button>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row row-cols-2 row-cols-md-3 g-2 small">
+                    <div class="col"><strong>Opening hours:</strong> ${place.opening_hours || 'Not available'}</div>
+                    <div class="col"><strong>Average visit duration:</strong> ${place.visit_duration} minutes</div>
+                    <div class="col"><strong>Entrance fee:</strong> ${place.entrance_fee || 'Not available'}</div>
+                    <div class="col"><strong>Distance from Panadura:</strong> ${place.distance_from_panadura} km</div>
+                    <div class="col"><strong>Accessibility:</strong> ${place.accessibility_info || 'Not available'}</div>
+                    <div class="col"><strong>Travel tips:</strong> ${place.travel_tips || 'Not available'}</div>
+                </div>
             `;
-            // weather loader per location
+
             if (place.is_outdoor) {
                 loadWeatherForDetail();
+            } else {
+                document.getElementById('detail-weather').innerHTML = '';
             }
-            // map zoom in 
+
             map.setView([place.latitude, place.longitude], 14);
 
             const offcanvas = new bootstrap.Offcanvas(document.getElementById('detailOffcanvas'));
@@ -256,29 +272,22 @@
                 addToPlan(place.place_id);
             });
 
-            // weather func
             function loadWeatherForDetail() {
                 const plan = getPlan();
                 const container = document.getElementById('detail-weather');
                 if (!plan.date) return;
 
-                container.innerHTML = `<p class="small text-muted">Checking weather...</p>`;
+                container.innerHTML = `<span class="text-muted">...</span>`;
 
                 fetch(`../api/weather.php?date=${plan.date}`)
                     .then(response => response.json())
                     .then(data => {
                         if (!data.available) {
-                            container.innerHTML = `<p class="small text-muted">Weather forecast not yet available for this date.</p>`;
+                            container.innerHTML = `<span class="text-muted">N/A</span>`;
                         } else if (data.is_bad_weather) {
-                            container.innerHTML = `
-                                <div class="alert alert-warning py-2 px-2 small">
-                                    Rain expected on ${plan.date} (${data.temp_min}°–${data.temp_max}°C). This is an outdoor location.
-                                </div>`;
+                            container.innerHTML = `<span class="text-warning">Rain expected</span>`;
                         } else {
-                            container.innerHTML = `
-                                <p class="small text-success mb-2">
-                                    Good weather expected on ${plan.date} (${data.temp_min}°–${data.temp_max}°C).
-                                </p>`;
+                            container.innerHTML = `<span class="text-success">${data.temp_min}°–${data.temp_max}°C</span>`;
                         }
                     });
             }
