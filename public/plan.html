@@ -285,7 +285,7 @@
                         if (!data.available) {
                             container.innerHTML = `<span class="text-muted">N/A</span>`;
                         } else if (data.is_bad_weather) {
-                            container.innerHTML = `<span class="text-warning">Rain expected</span>`;
+                            container.innerHTML = `<span class="text-danger">Rain expected</span>`;
                         } else {
                             container.innerHTML = `<span class="text-success">${data.temp_min}°–${data.temp_max}°C</span>`;
                         }
