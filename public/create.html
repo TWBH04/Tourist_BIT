@@ -2,11 +2,23 @@
 <html lang="en">
 <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <style>
+        .main-navbar { height: 56px; }
+        body { padding-top: 0; }
+    </style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DayQuest - Create Plan</title>
+    
 </head>
 <body>
+    <nav class="navbar navbar-dark bg-dark sticky-top px-3 main-navbar">
+        <span class="navbar-brand mb-0">DayQuest</span>
+        <a href="#" class="text-white text-decoration-none" data-bs-toggle="modal" data-bs-target="#helpModal">
+            <i class="bi bi-question-circle"></i> Help
+        </a>
+    </nav>
     <!-- Name date hours setup forum -->
     <div class="container mt-5" style="max-width: 600px;">
         <h1 class="mb-4">Set Up Your Plan</h1>
@@ -20,7 +32,7 @@
             <div class="mb-3">
                 <label for="visit-date" class="form-label">Planned visit date</label>
                 <input type="date" class="form-control" id="visit-date" required>
-                <p><i>*note that weather sugestions will only be availbale for 5 days onward from the present day</i></p>
+                <p><i>*note that weather sugestions will only be availbale for 16 days onward from the present day</i></p>
             </div>
 
             <div class="row mb-3">
@@ -38,7 +50,7 @@
             <hr class="my-4">
 
             <div id="template-suggestion" class="mb-4">
-                <p class="text-muted">New to the area? Need Help? We have some suggestions.</p>
+                <p class="text-muted">New to the area? Need Help? Check out our pre-made Templates.</p>
                 <button type="button" class="btn btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#templateModal">
                 Browse our templates</button>            
             </div>
@@ -60,6 +72,31 @@
                         <button type="button" class="btn btn-outline-success  audience-btn" data-audience="Family" >Family</button>
                     </div>
                     <div id="template-cards"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- modals help -->
+    <div class="modal fade" id="helpModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">How to use this page</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Give your plan a name and choose a date and time window. If you'd like a head start, browse our templates to begin from a ready-made plan.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- pop up modal for storage reminder -->
+    <div class="modal fade" id="storageReminderModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px;">
+                <div class="modal-body text-center py-4">
+                    <p class="mb-3">Your plan is saved only in this browser. Clearing your browser or site data will erase it, so avoid doing that before your trip is done.</p>
+                    <button type="button" class="btn btn-dark px-4" style="border-radius: 10px;" id="storage-reminder-ok">OK</button>
                 </div>
             </div>
         </div>
@@ -95,12 +132,16 @@
             };
 
             localStorage.setItem(PLAN_KEY, JSON.stringify(plan));
-            window.location.href = 'plan.html';
+            new bootstrap.Modal(document.getElementById('storageReminderModal')).show();//popup
         }
         // forum submit
         document.getElementById('setup-form').addEventListener('submit', (event) => {
             event.preventDefault();
             buildAndSavePlan(selectedTemplatePlaces);
+        });
+        // redirect to popu
+        document.getElementById('storage-reminder-ok').addEventListener('click', () => {
+            window.location.href = 'plan.html';
         });
 
         // template forwading 
