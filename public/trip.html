@@ -10,6 +10,18 @@
         .main-navbar { height: 56px; }
         #map { height: calc(100vh - 56px); }
         .sidebar { height: calc(100vh - 56px); overflow-y: auto; border-right: 5px solid #dee2e6; display: flex; flex-direction: column; }
+        /* mobile layout */
+        @media (max-width: 767px) {
+            .sidebar, #map-col { width: 100%; }
+                #map-col.d-none-mobile, .sidebar.d-none-mobile { display: none; }
+                #mobile-view-toggle { display: block; }
+            }
+            @media (min-width: 768px) {
+                #mobile-view-toggle { display: none; }
+            }
+            @media (max-width: 767px) {
+                #currentStopOffcanvas { left: 0 !important; }
+            }
     </style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -44,17 +56,18 @@
                 </button>
             </div>
 
-            <div class="col-md-7 p-0">
+            <div class="col-md-7 p-0" id="map-col">
                 <div id="map"></div>
-                <div class="offcanvas offcanvas-bottom" tabindex="-1" id="currentStopOffcanvas" data-bs-backdrop="false" data-bs-scroll="true" style="height: 35vh; left: 41.6667%; border-radius: 20px 20px 0 0;">
-                    <div class="offcanvas-header pb-2">
-                        <div class="d-flex align-items-center gap-2 flex-grow-1">
-                            <h5 class="offcanvas-title mb-0" id="current-stop-name"></h5>
-                        </div>
+
+            </div>
+            <div class="offcanvas offcanvas-bottom" tabindex="-1" id="currentStopOffcanvas" data-bs-backdrop="false" data-bs-scroll="true" style="height: 35vh; left: 41.6667%; border-radius: 20px 20px 0 0;">
+                <div class="offcanvas-header pb-2">
+                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                        <h5 class="offcanvas-title mb-0" id="current-stop-name"></h5>
                     </div>
-                    <div class="offcanvas-body" id="current-stop-body" style="overflow-y:auto;">
-                        <!-- JS -->
-                    </div>
+                </div>
+                <div class="offcanvas-body" id="current-stop-body" style="overflow-y:auto;">
+                    <!-- JS -->
                 </div>
             </div>
         </div>
@@ -226,6 +239,9 @@
                         <button type="button" class="btn btn-success btn-sm rounded-pill px-3" id="mark-visited-btn" data-place-id="${current.place_id}">
                             <i class="bi bi-check-circle"></i> Mark as Visited
                         </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-md-none" id="view-toggle-btn">
+                            <i class="bi bi-geo-alt"></i> <span id="view-toggle-label">${mobileShowingMap ? 'Show List' : 'View on Map'}</span>
+                        </button>
                     </div>
                 </div>
 
@@ -256,6 +272,15 @@
 
             document.getElementById('mark-visited-btn').addEventListener('click', () => {
                 markVisited(current.place_id);
+            });
+            document.getElementById('view-toggle-btn').addEventListener('click', (event) => {
+                event.stopPropagation();
+                toggleMobileView();
+                document.getElementById('view-toggle-label').textContent = mobileShowingMap ? 'Show List' : 'View on Map';
+
+                const offcanvasEl = document.getElementById('currentStopOffcanvas');
+                const instance = bootstrap.Offcanvas.getInstance(offcanvasEl) || new bootstrap.Offcanvas(offcanvasEl);
+                instance.show();
             });
         }
 
@@ -367,9 +392,22 @@
             const planNow = getPlan();
             planNow.trip_started = true;
             savePlan(planNow);
+            if (window.innerWidth < 768 && !mobileShowingMap) {
+                toggleMobileView();
+            }
             loadTripPlaces();
         });
+        // mobile
+        let mobileShowingMap = false;
 
+        function toggleMobileView() {
+            mobileShowingMap = !mobileShowingMap;
+            document.querySelector('.sidebar').classList.toggle('d-none-mobile', mobileShowingMap);
+            document.getElementById('map-col').classList.toggle('d-none-mobile', !mobileShowingMap);
+            if (mobileShowingMap) {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+        }
     </script>
     <div class="modal fade" id="helpModal" tabindex="-1">
         <div class="modal-dialog">
