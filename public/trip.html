@@ -232,7 +232,7 @@
 
             bodyEl.innerHTML = `
                 <div class="d-flex gap-3 mb-2">
-                    <img src="${current.thumbnail || placeholderImg}" alt="${current.name}"
+                    <img src="${current.thumbnail ? '../assets/img/' + current.thumbnail : placeholderImg}" alt="${current.name}"
                         style="width:100px; height:100px; object-fit:cover; border-radius:12px; flex-shrink:0;">
                     <div>
                         <p class="small mb-2">${current.description || ''}</p>
