@@ -51,29 +51,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($place['category_id'] === '') $errors[] = 'Category is required.';
     if ($place['latitude'] === '' || !is_numeric($place['latitude'])) $errors[] = 'A valid latitude is required.';
     if ($place['longitude'] === '' || !is_numeric($place['longitude'])) $errors[] = 'A valid longitude is required.';
+    
+    // image validation
+    $newThumbnail = null;
+
+    if (!empty($_FILES['thumbnail']['name'])) {
+        $file = $_FILES['thumbnail'];
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'There was a problem uploading the photo.';
+        } else {
+            $imageInfo = getimagesize($file['tmp_name']);
+            $allowedTypes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+
+            if ($imageInfo === false || !isset($allowedTypes[$imageInfo['mime']])) {
+                $errors[] = 'The uploaded file is not a valid image (JPG, PNG, or WebP only).';
+            } elseif ($file['size'] > 2 * 1024 * 1024) {
+                $errors[] = 'Image must be under 2MB.';
+            } else {
+                $ext = $allowedTypes[$imageInfo['mime']];
+                $newThumbnail = 'place-' . uniqid() . '.' . $ext;
+                $destination = __DIR__ . '/../assets/img/' . $newThumbnail;
+                move_uploaded_file($file['tmp_name'], $destination);
+            }
+        }
+    }
 
     if (empty($errors)) {
+        $thumbnailToSave = $newThumbnail ?? $place['thumbnail'];
         if ($isEdit) {
             $stmt = $pdo->prepare(
                 'UPDATE place SET name=?, category_id=?, description=?, opening_hours=?, visit_duration=?,
-                 latitude=?, longitude=?, entrance_fee=?, distance_from_panadura=?, travel_tips=?, accessibility_info=?
+                 latitude=?, longitude=?, entrance_fee=?, distance_from_panadura=?, travel_tips=?, accessibility_info=?, thumbnail=?
                  WHERE place_id=?'
             );
             $stmt->execute([
                 $place['name'], $place['category_id'], $place['description'], $place['opening_hours'], $place['visit_duration'],
                 $place['latitude'], $place['longitude'], $place['entrance_fee'], $place['distance_from_panadura'],
-                $place['travel_tips'], $place['accessibility_info'], $editId
+                $place['travel_tips'], $place['accessibility_info'], $thumbnailToSave, $editId
             ]);
         } else {
             $stmt = $pdo->prepare(
                 'INSERT INTO place (name, category_id, description, opening_hours, visit_duration,
-                 latitude, longitude, entrance_fee, distance_from_panadura, travel_tips, accessibility_info)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+                 latitude, longitude, entrance_fee, distance_from_panadura, travel_tips, accessibility_info, thumbnail)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
             );
             $stmt->execute([
                 $place['name'], $place['category_id'], $place['description'], $place['opening_hours'], $place['visit_duration'],
                 $place['latitude'], $place['longitude'], $place['entrance_fee'], $place['distance_from_panadura'],
-                $place['travel_tips'], $place['accessibility_info']
+                $place['travel_tips'], $place['accessibility_info'] ,$thumbnailToSave
             ]);
         }
 
@@ -110,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             <div class="mb-3">
                 <label class="form-label">Name</label>
                 <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($place['name']) ?>">
@@ -131,6 +157,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="mb-3">
                 <label class="form-label">Description</label>
                 <textarea name="description" class="form-control" rows="3"><?= htmlspecialchars($place['description']) ?></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Photo</label>
+                <?php if (!empty($place['thumbnail'])): ?>
+                    <div class="mb-2">
+                        <img src="../assets/img/<?= htmlspecialchars($place['thumbnail']) ?>" style="width:100px; height:100px; object-fit:cover; border-radius:8px;">
+                    </div>
+                <?php endif; ?>
+                <input type="file" name="thumbnail" class="form-control" accept="image/jpeg,image/png,image/webp">
+                <div class="form-text">JPG, PNG or WebP. Leave empty to keep the current photo.</div>
             </div>
 
             <div class="mb-3">

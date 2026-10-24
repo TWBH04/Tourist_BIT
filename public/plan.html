@@ -154,7 +154,7 @@
             const placeholderImg = 'https://placehold.co/300x200?text=DayQuest';
             container.innerHTML = preview.map(place => `
             <div class="preview-card place-card" data-place-id="${place.place_id}" style="cursor:pointer;">
-                <img src="${place.thumbnail || placeholderImg}" alt="${place.name}">
+                <img src="${place.thumbnail ? '../assets/img/' + place.thumbnail : placeholderImg}" alt="${place.name}">
                 <h6 class="mt-1 mb-0" style="font-size: 0.85rem;">${place.name}</h6>
                 <p class="text-muted mb-0" style="font-size: 0.75rem;">${place.category_name} &middot; ${place.distance_from_panadura} km</p>
             </div>
@@ -170,7 +170,7 @@
             container.innerHTML = places.map(place => `
                 <div class="card mb-2 place-card" data-place-id="${place.place_id}" style="cursor:pointer;">
                     <div class="d-flex">
-                        <img src="${place.thumbnail || placeholderImg}" alt="${place.name}" style="width:80px; height:80px; object-fit:cover; border-radius:4px 0 0 4px;">
+                        <img src="${place.thumbnail ? '../assets/img/' + place.thumbnail : placeholderImg}" alt="${place.name}" style="width:80px; height:80px; object-fit:cover; border-radius:4px 0 0 4px;">
                         <div class="card-body p-2">
                             <h6 class="card-title mb-1">
                                 ${place.name}
@@ -250,7 +250,7 @@
 
             document.getElementById('detail-body').innerHTML = `
                 <div class="d-flex gap-3 mb-2">
-                    <img src="${place.thumbnail || placeholderImg}" alt="${place.name}"
+                    <img src="${place.thumbnail ? '../assets/img/' + place.thumbnail : placeholderImg}" alt="${place.name}"
                         style="width:100px; height:100px; object-fit:cover; border-radius:12px; flex-shrink:0;">
                     <div>
                         <p class="small mb-2">${place.description || ''}</p>
