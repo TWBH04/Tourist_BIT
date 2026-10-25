@@ -234,9 +234,18 @@
 
             if (!current) {
                 titleEl.textContent = 'Trip complete!';
-                bodyEl.innerHTML = `<p>You've visited every place in your plan. Great day out!</p>`;
-                new bootstrap.Offcanvas(document.getElementById('currentStopOffcanvas')).show();
-                return;
+                bodyEl.innerHTML = `<p>You've visited every place in your plan!.</p>
+                <button type="button" class="btn btn-success rounded-pill px-3" id="new-plan-btn">
+                            <i class="bi bi-plus-circle"></i> Make Another Plan
+                        </button>
+                    `;
+                    new bootstrap.Offcanvas(document.getElementById('currentStopOffcanvas')).show();
+
+                    document.getElementById('new-plan-btn').addEventListener('click', () => {
+                        localStorage.removeItem(PLAN_KEY);
+                        window.location.href = 'create.html';
+                    });
+                    return;
             }
 
             titleEl.textContent = `Stop ${current.order}: ${current.name}`;
