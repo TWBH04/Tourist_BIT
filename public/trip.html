@@ -73,7 +73,7 @@
                 <div id="map"></div>
 
             </div>
-            <div class="offcanvas offcanvas-bottom" tabindex="-1" id="currentStopOffcanvas" data-bs-backdrop="false" data-bs-scroll="true" style="height: 35vh; left: 41.6667%; border-radius: 20px 20px 0 0;">
+            <div class="offcanvas offcanvas-bottom" tabindex="-1" id="currentStopOffcanvas" data-bs-backdrop="false" data-bs-scroll="true" style="height: 40vh; left: 41.6667%; border-radius: 20px 20px 0 0;">
                 <div class="offcanvas-header pb-2">
                     <div class="d-flex align-items-center gap-2 flex-grow-1">
                         <h5 class="offcanvas-title mb-0" id="current-stop-name"></h5>
@@ -225,6 +225,16 @@
             marker.addTo(map);
             tripMarkers.push(marker);
         }
+        function fitAboveStop(latlngs) {
+            const pane = document.getElementById('currentStopOffcanvas');
+            const covered = pane.offsetHeight + (parseFloat(getComputedStyle(pane).bottom) || 0);
+
+            map.fitBounds(latlngs, {
+                paddingTopLeft: [50, 50],
+                paddingBottomRight: [50, covered + 30],   // keep everything above the pane
+                animate: false
+            });
+        }
 
         function showCurrentStop(places) {
             const current = places.find(p => !p.visited);
@@ -284,10 +294,10 @@
                 ? visited[visited.length - 1]
                 : { latitude: PANADURA_COORDS[0], longitude: PANADURA_COORDS[1] };
 
-            map.fitBounds([
+            fitAboveStop([
                 [fromPoint.latitude, fromPoint.longitude],
                 [current.latitude, current.longitude]
-            ], { padding: [50, 50] });
+            ]);
 
             const offcanvas = new bootstrap.Offcanvas(document.getElementById('currentStopOffcanvas'));
             offcanvas.show();
@@ -376,6 +386,7 @@
                 const text = `${fromPoint.name} → ${next.name}: approx. ${km} km, ${mins} min`;
                 const detailEl = document.getElementById('route-info-detail');
                 if (detailEl) detailEl.textContent = text;
+                 fitAboveStop(route.coordinates);
             });
         }
         // numbered markers

@@ -107,7 +107,7 @@
             </div>
         </div>
         <!-- plac detail panel -->
-        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="detailOffcanvas" data-bs-backdrop="false" style="height: 35vh; left: 41.6667%; border-radius: 20px 20px 0 0;">
+        <div class="offcanvas offcanvas-bottom" tabindex="-1" id="detailOffcanvas" data-bs-backdrop="false" style="height: 40vh; ; left: 41.6667%; border-radius: 20px 20px 0 0;">
             <div class="offcanvas-header pb-2">
                 <div class="d-flex align-items-center gap-2 flex-grow-1">
                     <h5 class="offcanvas-title mb-0" id="detail-name"></h5>
@@ -133,6 +133,7 @@
 
         // places fetch to cards and markersd
         let markers = [];
+        let markersById = {};    
         function loadPlaces(url = '../api/places.php') {
             fetch(url)
                 .then(response => response.json())
@@ -146,12 +147,14 @@
         function renderMarkers(places) {
             markers.forEach(m => map.removeLayer(m));
             markers = [];
+            markersById = {};          
 
             places.forEach(place => {
                 const marker = L.marker([place.latitude, place.longitude]).addTo(map);
                 marker.bindPopup(`<strong>${place.name}</strong>`);
                 marker.on('click', () => showPlaceDetail(place.place_id));
                 markers.push(marker);
+                markersById[place.place_id] = marker;
             });
         }
 
@@ -255,6 +258,7 @@
                 .then(data => renderDetail(data.place));
         }
 
+
         function renderDetail(place) {
             const placeholderImg = 'https://placehold.co/300x200?text=DayQuest';
 
@@ -294,7 +298,9 @@
                 document.getElementById('detail-weather').innerHTML = '';
             }
 
-            map.setView([place.latitude, place.longitude], 14);
+            focusPlace(place.latitude, place.longitude, 14);
+            const marker = markersById[place.place_id];   
+            if (marker) marker.openPopup();   
 
             const offcanvas = new bootstrap.Offcanvas(document.getElementById('detailOffcanvas'));
             offcanvas.show();
@@ -328,7 +334,15 @@
                     });
             }
         }
-
+        const PANE_HEIGHT_RATIO = 0.35;   // matches height: 35vh
+        const PANE_BOTTOM_GAP = 16;       // matches bottom: 16px
+        function focusPlace(lat, lng, zoom = 14) {
+            const paneHeight = window.innerHeight * PANE_HEIGHT_RATIO + PANE_BOTTOM_GAP;
+            // move the map centre down by half the pane height,
+            // so the place appears in the middle of the visible map area
+            const point = map.project([lat, lng], zoom).add([0, paneHeight / 2]);
+            map.setView(map.unproject(point, zoom), zoom, { animate: false });
+        }
         // Add place to plan and local storage
         const PLAN_KEY = 'DayQuestPlan';   
 
