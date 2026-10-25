@@ -10,6 +10,16 @@
         .main-navbar { height: 56px; }
         #map { height: calc(100vh - 56px); }
         .sidebar { height: calc(100vh - 56px); overflow-y: auto; border-right: 5px solid #dee2e6; display: flex; flex-direction: column; }
+        .brand-img {
+            height: 40px;       
+            max-height: 100%;
+            width: auto;        /* keeps aspect ratio */
+            max-width: 100%;
+            object-fit: contain;
+        }
+        @media (max-width: 576px) {
+            .brand-img { height: 32px; }
+        }
         /* mobile layout */
         @media (max-width: 767px) {
             .sidebar, #map-col { width: 100%; }
@@ -29,7 +39,10 @@
 </head>
 <body>
     <nav class="navbar navbar-dark bg-dark sticky-top px-3 main-navbar">
-        <span class="navbar-brand mb-0">DayQuest</span>
+        <a class="navbar-brand d-flex align-items-center gap-2 mb-0 p-0" href="index.html">
+            <img src="../assets/img/logo.png" alt="DayQuest icon" class="brand-img">
+            <img src="../assets/img/name.png" alt="DayQuest" class="brand-img">
+        </a>
         <a href="#" class="text-white text-decoration-none" data-bs-toggle="modal" data-bs-target="#helpModal">
             <i class="bi bi-question-circle"></i> Help
         </a>
